@@ -5,38 +5,46 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Creating virtual environment and installing dependencies...'
+                // Optional: if Python and pip are in PATH, you can uncomment this:
+                // bat 'python -m pip install -r requirements.txt'
             }
         }
+
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                sh 'python3 -m unittest discover -s .'
+                // Run unit tests on Windows
+                bat 'python -m unittest discover -s .'
             }
         }
+
         stage('Deploy') {
             steps {
                 echo 'Deploying application...'
-                sh '''
-                mkdir -p ${WORKSPACE}/python-app-deploy
-                cp ${WORKSPACE}/app.py ${WORKSPACE}/python-app-deploy/
+                // Create folder and copy app.py (Windows style)
+                bat '''
+                if not exist "%WORKSPACE%\\python-app-deploy" mkdir "%WORKSPACE%\\python-app-deploy"
+                copy /Y "%WORKSPACE%\\app.py" "%WORKSPACE%\\python-app-deploy\\"
                 '''
             }
         }
+
         stage('Run Application') {
             steps {
                 echo 'Running application...'
-                sh '''
-                nohup python3 ${WORKSPACE}/python-app-deploy/app.py > ${WORKSPACE}/python-app-deploy/app.log 2>&1 &
-                echo $! > ${WORKSPACE}/python-app-deploy/app.pid
+                // Run Flask app in background (Windows style)
+                bat '''
+                cd "%WORKSPACE%\\python-app-deploy"
+                start /b "" python app.py > app.log 2>&1
                 '''
             }
         }
+
         stage('Test Application') {
             steps {
                 echo 'Testing application...'
-                sh '''
-                python3 ${WORKSPACE}/test_app.py
-                '''
+                // This test_app.py uses Flask test_client; no server URL needed
+                bat 'python test_app.py'
             }
         }
     }
